@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        .main {
+            background-color: gray;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 50px;
+        }
+
+        form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <section class="main">
+        <form onsubmit="betting()">
+            <h2>Create Bet</h2>
+            <div>
+                <div><label for="">Select Sport</label><br>
+                    <select id="sportsData" onchange="fetchMatches()" required>
+                        <option value="">Select Sport</option>
+                    </select>
+                </div><br>
+                <div>
+                    <label for="">Select Match</label><br>
+                    <select id="matchesData" onchange="displayMatchDetails()" required>
+                        <option value="">Select Match</option>
+                    </select>
+                </div>
+
+
+                <div>
+                    <p>Match Details</p>
+                    <p>Home Team: <span id="homeTeam"></span></p>
+                    <p>Away Team: <span id="awayTeam"></span></p>
+                    <p>Start Time: <span id="startTime"></span></p>
+                    <p>Match Completed: <span id="status"></span></p>
+                    <p>Scores:
+                    <div id="scoresPanel"></div>
+                    </p>
+
+                    <!-- Display other match details here -->
+                </div>
+            </div>
+
+            <div>
+                <div><label for="">Bet Amount (Note: 2 PI above)</label><br><input type="number" min="2" required></div>
+                <h3>SELECT THE MATCH OUTCOME PREDICTION</h3>
+                <div>
+                    <input type="radio" name="outcome" id=""><label for="">Team A wins</label>
+                    <input type="radio" name="outcome" id=""><label for="">Draw</label>
+                    <input type="radio" name="outcome" id=""><label for="">Team B wins</label>
+                </div>
+            </div>
+
+
+            <div>
+                <button class="btn">Submit</button>
+            </div>
+        </form>
+    </section>
+
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script>Pi.init({ version: "2.0" })</script>
+
+    <script>
+        const apiKey = '567ef41c6b1cfea1a8d58dbdcdbf482b'
+        const selectElement = document.getElementById('sportsData');
+        const selectElement1 = document.getElementById('matchesData');
+
+        function fetchSports() {
+
+            const apiUrl = `https://api.the-odds-api.com/v4/sports/?apiKey=${apiKey}`;
+
+            // Using the Fetch API to make a GET request
+            fetch(apiUrl)
+                .then(response => {
+                    // Check if the response status is OK (200)
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    // Parse the response data as JSON
+                    return response.json();
+                })
+                .then(data => {
+                    selectElement.innerHTML = '<option value="">Select Data</option>';
+
+                    // Populate the select with fetched data
+                    data.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.key; // Replace 'value' with the property name in your data
+                        option.textContent = item.title; // Replace 'text' with the property name in your data
+                        selectElement.appendChild(option);
+                    });
+                    console.log('Data received:', data);
+                    // You can manipulate or use the data here
+                })
+                .catch(error => {
+                    // Handle errors that may occur during the fetch request
+                    console.error('There was a problem with the fetch operation:', error);
+                });
+        }
+
+        let matchesData = []; // Variable to store fetched matches data
+
+        function fetchMatches() {
+            const sport = document.getElementById('sportsData').value;
+            const apiUrl = `https://api.the-odds-api.com/v4/sports/${sport}/scores/?apiKey=${apiKey}`;
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    selectElement1.innerHTML = '<option value="">Select Data</option>';
+                    matchesData = data; // Store fetched matches data
+
+                    data.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item.id;
+                        option.textContent = `${item.home_team} vs ${item.away_team}`;
+                        selectElement1.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                });
+        }
+
+        function displayMatchDetails() {
+            console.log(matchesData)
+            const selectedMatchKey = document.getElementById('matchesData').value;
+            const selectedMatch = matchesData.find(match => match.id === selectedMatchKey);
+
+            if (selectedMatch) {
+                const providedTime = selectedMatch.commence_time;
+                const dateTime = new Date(providedTime);
+
+                const formattedDateTime = dateTime.toLocaleString()
+
+                document.getElementById('awayTeam').textContent = selectedMatch.away_team;
+                document.getElementById('homeTeam').textContent = selectedMatch.home_team;
+                document.getElementById('startTime').textContent = formattedDateTime;
+                document.getElementById('status').textContent = selectedMatch.completed;
+                const scoresPanel = document.getElementById('scoresPanel')
+
+                console.log(selectedMatch.scores)
+
+                selectedMatch.scores.forEach(item => {
+                    const option = document.createElement('p');
+
+                    option.innerHTML = `Team ${item.name}: <b>${item.score}</b>`;
+                    scoresPanel.appendChild(option);
+                });
+                console.log(selectedMatch)
+
+
+                // Display other match details based on the selected match
+            }
+        }
+
+
+        // // Using the Fetch API to make a GET request
+        // function fetchDetails() {
+        //     fetch(apiUrl)
+        //         .then(response => {
+        //             // Check if the response status is OK (200)
+        //             if (!response.ok) {
+        //                 throw new Error('Network response was not ok');
+        //             }
+        //             // Parse the response data as JSON
+        //             return response.json();
+        //         })
+        //         .then(data => {
+
+        //             console.log('Data received:', data);
+        //             // You can manipulate or use the data here
+        //         })
+        //         .catch(error => {
+        //             // Handle errors that may occur during the fetch request
+        //             console.error('There was a problem with the fetch operation:', error);
+        //         });
+        // }
+
+        fetchSports()
+
+        function betting() {
+            alert('Your bet has been placed')
+        }
+
+        const Pi = window.Pi;
+
+        // Empty array for testing purposes:
+        const scopes = [];
+
+        //Empty function that will log an incomplete payment if found
+        //Developer needs to implement this callback function
+        function onIncompletePaymentFound(payment) {
+            console.log(payment);
+        };
+
+        Pi.authenticate(scopes, onIncompletePaymentFound).then(function (auth) {
+            console.log(auth)
+        }).catch(function (error) {
+            console.error(error);
+        })
+    </script>
+</body>
+
+</html>
